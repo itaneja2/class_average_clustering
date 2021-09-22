@@ -46,9 +46,9 @@ def get_image_2d_matrix(input_dir):
     mrc_file = glob.glob(mrc_path)
     
     if len(mrc_file) == 0:
-        sys.exit('mrc file does not exist in %s')
+        sys.exit('mrc file does not exist in %s' % mrc_path)
     elif len(mrc_file) > 1:
-        sys.exit('multiple mrc files exist in %s')
+        sys.exit('multiple mrc files exist in %s' % mrc_path)
 
     mrc = mrcfile.open(mrc_file[0], mode='r')
     return(mrc.data)
@@ -56,13 +56,13 @@ def get_image_2d_matrix(input_dir):
 
 def get_particle_count(input_dir):
 
-    particle_count_path = '%s/input/*particle_counts.pkl' % input_dir
+    particle_count_path = '%s/input/*.pkl' % input_dir
     particle_count_file = glob.glob(particle_count_path)
     
     if len(particle_count_file) == 0:
-        sys.exit('particle count file does not exist in %s')
+        sys.exit('particle count file does not exist in %s' % particle_count_path)
     elif len(particle_count_file) > 1:
-        sys.exit('multiple particle count files exist in %s')
+        sys.exit('multiple particle count files exist in %s' % particle_count_path)
 
     particle_count_dict = load_obj(particle_count_file[0])
     return(particle_count_dict)

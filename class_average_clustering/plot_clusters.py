@@ -246,27 +246,31 @@ if __name__=="__main__":
     parser.add_argument("--num_clusters", type=int, help="If you want to specify the number of clusters to group the class averages in, you can specify that here. Otherwise, the program will decide on the optimal number of clusters according to the silhouette distance") 
     args = parser.parse_args()
 
+    input_dir = args.input_dir
+    input_dir = input_dir[:-1] if input_dir.endswith('/') else input_dir
+
     if args.num_clusters is not None:
         if args.num_clusters <= 0:
             sys.exit('invalid input - num clusters must be positive')
 
-    filepath_txt_file = '%s/filepath.txt' % args.input_dir 
+    filepath_txt_file = '%s/filepath.txt' % input_dir 
     if Path(filepath_txt_file).exists() == False:
         sys.exit('invalid input - input_dir must be the directory where pairwise matrices were saved')
 
-    image_2d_matrix = get_image_2d_matrix(args.input_dir)   
-    particle_count_dict = get_particle_count(args.input_dir)
+    image_2d_matrix = get_image_2d_matrix(input_dir)   
+    particle_count_dict = get_particle_count(input_dir)
+
 
     print('calculating cluster labels')
-    calc_spectral_cluster_labels(args.input_dir, 'corr', args.num_clusters)
+    calc_spectral_cluster_labels(input_dir, 'corr', args.num_clusters)
     print('plotting distance matrices')
-    plot_dist_matrix(args.input_dir, 'corr', 'spectral_clustering')
-    plot_hierarchical_cluster(args.input_dir, 'edge', 'hierarchical_clustering')
+    plot_dist_matrix(input_dir, 'corr', 'spectral_clustering')
+    plot_hierarchical_cluster(input_dir, 'edge', 'hierarchical_clustering')
     print('generating sorted mrc panel per cluster')
-    gen_image_panel(args.input_dir, image_2d_matrix, particle_count_dict)
+    gen_image_panel(input_dir, image_2d_matrix, particle_count_dict)
 
     print('generating histograms')
-    hist_wrapper(args.input_dir)
+    hist_wrapper(input_dir)
     
 
 
