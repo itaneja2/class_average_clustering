@@ -425,9 +425,10 @@ if __name__=="__main__":
     #save filepath.txt -- used for plotly visualization
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     output_dir_abs_path = str(Path(output_dir).absolute())
+    output_dir_abs_path_norm = os.path.normpath(output_dir_abs_path)
     filepath_txt_file = '%s/filepath.txt' % output_dir
     with open(filepath_txt_file, "w") as text_file:
-        text_file.write(output_dir_abs_path)  
+        text_file.write(output_dir_abs_path_norm)  
 
 
     particle_count_file = get_particle_counts(args.star_file) 
