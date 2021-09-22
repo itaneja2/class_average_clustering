@@ -255,7 +255,7 @@ if __name__=="__main__":
 
     filepath_txt_file = '%s/filepath.txt' % input_dir 
     if Path(filepath_txt_file).exists() == False:
-        sys.exit('invalid input - input_dir must be the directory where pairwise matrices were saved')
+        sys.exit('invalid input - %s must be the directory where pairwise matrices were saved' % filepath_txt_file)
 
     image_2d_matrix = get_image_2d_matrix(input_dir)   
     particle_count_dict = get_particle_count(input_dir)
