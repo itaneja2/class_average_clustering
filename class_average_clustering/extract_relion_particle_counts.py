@@ -1,5 +1,5 @@
 from pathlib import Path
-from helper_functions import save_obj 
+from helper_functions import save_obj, sort_dict
 
 
 def get_particle_counts(star_file):
