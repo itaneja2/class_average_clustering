@@ -44,6 +44,19 @@ setup(
     # Allows `setup.py test` to work correctly with pytest
     setup_requires=[] + pytest_runner,
 
+    install_requires=[
+        “numpy>=1.19.5”,
+        “mrcfile>=1.3.0”,
+        “matplotlib>=3.3.2”,
+        “opencv-python>=4.5.3.56”,
+        “scipy>=1.6.3”,
+        “scikit-learn>=0.23.1”,
+        “scikit-image>=0.18.3”,
+        “imutils>=0.5.4”,
+        “joblib>=0.15.1”,
+        “seaborn>=0.11.0”,
+        “networkx>=2.5”],
+
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
     # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment
