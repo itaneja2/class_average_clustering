@@ -55,6 +55,7 @@ setup(
         "imutils>=0.5.4",
         "joblib>=0.15.1",
         "seaborn>=0.11.0",
+        "pickle5>=0.0.11",
         "networkx>=2.5"],
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
