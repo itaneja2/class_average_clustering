@@ -1,18 +1,27 @@
-cluster
+class\_average\_clustering
 ==============================
-[//]: # (Badges)
-[![GitHub Actions Build Status](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/class_average_clustering/workflows/CI/badge.svg)](https://github.com/REPLACE_WITH_OWNER_ACCOUNT/class_average_clustering/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/cluster/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/cluster/branch/master)
+
+Generates clusters, sorts class averages, and generates relevant input for histogram visualization
 
 
-Clusters class averages and generates relevant input for histogram_viz
-
-### Copyright
-
-Copyright (c) 2021, Ishan Taneja
+### Installation
 
 
-#### Acknowledgements
- 
-Project based on the 
-[Computational Molecular Science Python Cookiecutter](https://github.com/molssi/cookiecutter-cms) version 1.6.
+1. Clone the git repository to your local machine and move into that directory
+
+		git clone https://github.com/itaneja2/class_average_clustering.git
+		cd class_average_clustering
+
+3. Install class\_average\_clustering using `pip`
+
+		pip install .
+
+4. Then, whenever you want to check for updates simply run
+
+		git pull
+		pip install .
+		
+	The first command (`git pull`) checks the [git repo](https://github.com/itaneja2/class_average_clustering) for updates and then the second command installs the updated version.
+
+
+	
