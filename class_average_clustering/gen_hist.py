@@ -12,6 +12,7 @@ from networkx.algorithms.community.centrality import girvan_newman
 from sklearn.preprocessing import minmax_scale
 from pathlib import Path
 from cv2 import *
+#import pandas as pd
 from helper_functions import save_obj, get_image_2d_matrix, get_particle_count, get_particle_count_dict_cluster, remove_files_in_folder 
 
 os.environ['QT_QPA_PLATFORM']='offscreen'
@@ -337,9 +338,9 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
             
         edge_corr_dist_matrix_subset = edge_dist_matrix_subset/(1-corr_dist_matrix_subset)
         #normalized between 0-1 so we can assign a probability in the same manner as we did for correlation based distance
-        edge_corr_dist_matrix_subset_norm = (edge_corr_dist_matrix_subset - np.min(edge_corr_dist_matrix_subset.flatten())) / (np.max(edge_corr_dist_matrix_subset.flatten()) - np.min(edge_corr_dist_matrix_subset.flatten())) 
+        #edge_corr_dist_matrix_subset_norm = (edge_corr_dist_matrix_subset - np.min(edge_corr_dist_matrix_subset.flatten())) / (np.max(edge_corr_dist_matrix_subset.flatten()) - np.min(edge_corr_dist_matrix_subset.flatten())) 
 
-        edge_corr_percentile = np.percentile(edge_corr_dist_matrix_subset_norm.flatten(), range(1,100))
+        edge_corr_percentile = np.percentile(edge_corr_dist_matrix_subset.flatten(), range(1,100))
         edge_corr_percentile = edge_corr_percentile[edge_corr_percentile > 0]
         
         corr_percentile = np.percentile(corr_dist_matrix_subset.flatten(), range(1,100))
@@ -352,7 +353,7 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
             dist_matrix = corr_dist_matrix_subset
             percentile = corr_percentile
         else:
-            dist_matrix = edge_corr_dist_matrix_subset_norm
+            dist_matrix = edge_corr_dist_matrix_subset
             percentile = edge_corr_percentile
 
         fd = delayed(get_cluster_community_map)    
@@ -445,9 +446,9 @@ def get_cluster_info(protein, corr_cluster_labels, corr_dist_matrix, edge_dist_m
             
         edge_corr_dist_matrix_subset = edge_dist_matrix_subset/(1-corr_dist_matrix_subset)
         #normalized between 0-1 so we can assign a probability in the same manner as we did for correlation based distance
-        edge_corr_dist_matrix_subset_norm = (edge_corr_dist_matrix_subset - np.min(edge_corr_dist_matrix_subset.flatten())) / (np.max(edge_corr_dist_matrix_subset.flatten()) - np.min(edge_corr_dist_matrix_subset.flatten())) 
+        #edge_corr_dist_matrix_subset_norm = (edge_corr_dist_matrix_subset - np.min(edge_corr_dist_matrix_subset.flatten())) / (np.max(edge_corr_dist_matrix_subset.flatten()) - np.min(edge_corr_dist_matrix_subset.flatten())) 
 
-        edge_corr_percentile = np.percentile(edge_corr_dist_matrix_subset_norm.flatten(), range(1,100))
+        edge_corr_percentile = np.percentile(edge_corr_dist_matrix_subset.flatten(), range(1,100))
         edge_corr_percentile = edge_corr_percentile[edge_corr_percentile > 0]
         
         corr_percentile = np.percentile(corr_dist_matrix_subset.flatten(), range(1,100))
@@ -460,7 +461,7 @@ def get_cluster_info(protein, corr_cluster_labels, corr_dist_matrix, edge_dist_m
             dist_matrix = corr_dist_matrix_subset
             percentile = corr_percentile
         else:
-            dist_matrix = edge_corr_dist_matrix_subset_norm
+            dist_matrix = edge_corr_dist_matrix_subset
             percentile = edge_corr_percentile
 
         
