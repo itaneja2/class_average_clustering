@@ -65,7 +65,8 @@ def get_image_rotation_matrix(image_2d_matrix):
 
     for i in range(0,image_2d_matrix.shape[0]):
 
-        curr_img = remove_neg_values(np.copy(image_2d_matrix[i,:,:]))
+        #curr_img = remove_neg_values(np.copy(image_2d_matrix[i,:,:]))
+        curr_img = np.copy(image_2d_matrix[i,:,:])
         max_height, max_width, rotation_matrix_map = get_rotated_image_max_shape(curr_img)
         image_2d_rotation_matrix_map[i] = rotation_matrix_map
         image_2d_rotation_matrix_max_shape_map[i] = [max_height, max_width]
