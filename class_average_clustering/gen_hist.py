@@ -24,17 +24,21 @@ def get_ref_image(dist_matrix, image_list, particle_count):
      
     #get image with closest median distance to all other images 
     median_dist_list = []
+    particle_count_list = []
     for i in image_list:
         dist_wrt_i = []
+        particle_count_list.append(particle_count[i])
         for j in image_list:
             dist_ij = dist_matrix[i,j]
-            #weighted_dist_ij = dist_ij * particle_count[j]
             dist_wrt_i.append(dist_ij)
         dist_wrt_i = np.array(dist_wrt_i)
         median_dist_list.append(np.median(dist_wrt_i))
     
-    median_dist_list = np.array(median_dist_list)
-    ref_img = image_list[np.argmin(median_dist_list)]
+    if len(image_list) > 2:
+        median_dist_list = np.array(median_dist_list)
+        ref_img = image_list[np.argmin(median_dist_list)]
+    else:
+        ref_img = image_list[np.argmax(np.array(particle_count_list))]
     
     return(ref_img)
 
