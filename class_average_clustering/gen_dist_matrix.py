@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import time
+import math
 import numpy as np
 import mrcfile
 import matplotlib.pyplot as plt
@@ -56,7 +57,8 @@ def norm_cross_correlation_cv(img1, img2):
 
 
 def get_image_rotation_matrix(image_2d_matrix):
-    
+
+    #each image has a unique maximum shape  
     image_2d_rotation_matrix_map = {}
     image_2d_rotation_matrix_max_shape_map = {}
 
@@ -119,6 +121,9 @@ def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_ro
         max_height = img2_max_height
     if img2_max_width > max_width:
         max_width = img2_max_width
+
+    ###img1 and img2 are mapped to the same dimensions -- note that comparisons between different sets of images are not of the same size###
+    ###normalized cross correlation is independent of size (in the zero-padded sense) but hausdroff distance is not###
     
     img1_cropped_padded = np.zeros((max_height,max_width))
 
@@ -192,6 +197,7 @@ def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_ro
     ##calculate distance between edges using hausdroff metric looping thorugh different values of sigma
     
     sigma_vals = [1,2,3]
+    hausdorff_norm = math.sqrt(math.pow(img1_cropped_padded.shape[0],2) + math.pow(img1_cropped_padded.shape[1],2))
     
     hausdroff_dist_matrix = np.zeros((len(sigma_vals), len(sigma_vals)))
 
@@ -223,8 +229,9 @@ def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_ro
             #if two images are identical, hausdorff matrix will be all np.inf which is equivalent to all zeros 
             if max_hausdroff_dist == 0:
                 max_hausdroff_dist = np.inf
-            
-            hausdroff_dist_matrix[i,j] = max_hausdroff_dist           
+                hausdroff_dist_matrix[i,j] = max_hausdroff_dist
+            else:
+                hausdroff_dist_matrix[i,j] = max_hausdroff_dist/hausdorff_norm           
 
         
     return(np.max(correlation_dist_matrix), np.min(hausdroff_dist_matrix), angle_optimal, relative_diff_y_optimal, relative_diff_x_optimal)
@@ -428,7 +435,7 @@ if __name__=="__main__":
     output_dir_abs_path_norm = os.path.normpath(output_dir_abs_path)
     filepath_txt_file = '%s/filepath.txt' % output_dir
     with open(filepath_txt_file, "w") as text_file:
-        text_file.write(output_dir_abs_path_norm)  
+        text_file.write(output_dir_abs_path_norm)
 
 
     particle_count_file = get_particle_counts(args.star_file) 

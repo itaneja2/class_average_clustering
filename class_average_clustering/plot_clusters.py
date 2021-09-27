@@ -164,6 +164,9 @@ def gen_image_panel(input_dir, image_2d_matrix, particle_count_dict):
         edge_dist_matrix_subset = edge_dist_matrix[np.ix_(image_list, image_list)]
         corr_dist_matrix_subset = 1-corr_dist_matrix[np.ix_(image_list, image_list)]
         edge_corr_ratio_dist_matrix_subset = edge_dist_matrix_subset/corr_dist_matrix_subset
+        #edge_corr_ratio_dist_matrix_subset = edge_dist_matrix_subset/np.square(corr_dist_matrix_subset)
+
+
              
         corresponding_images, cluster_sub_labels = calc_hierarchical_cluster(edge_corr_ratio_dist_matrix_subset)
         image_list_hclust_ordered = image_list[corresponding_images]
@@ -255,11 +258,10 @@ if __name__=="__main__":
 
     filepath_txt_file = '%s/filepath.txt' % input_dir 
     if Path(filepath_txt_file).exists() == False:
-        sys.exit('invalid input - %s must be the directory where pairwise matrices were saved' % filepath_txt_file)
+        sys.exit('invalid input - input_dir must be the directory where pairwise matrices were saved')
 
     image_2d_matrix = get_image_2d_matrix(input_dir)   
     particle_count_dict = get_particle_count(input_dir)
-
 
     print('calculating cluster labels')
     calc_spectral_cluster_labels(input_dir, 'corr', args.num_clusters)
