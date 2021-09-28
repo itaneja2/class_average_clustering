@@ -76,3 +76,8 @@ Once this is done running, you should see a file structure looking as follows:
            +---->  
 
 `cluster_0.mrc` and `cluster_1.mrc` refer to the original class average file split into two subsets. Each cluster is also sorted, so similar images appear near each other in the output. 
+
+
+### Methods/Results
+
+See this [google doc](https://docs.google.com/document/d/1KYschE8r3YAb4bSrK9QIjiIVuh4YR_jJ4uS37zUM7VI/edit) for more info. 
