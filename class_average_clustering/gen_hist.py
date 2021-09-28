@@ -74,6 +74,30 @@ def get_community(sparse_matrix, dist_matrix):
     return((node_groups_condensed, sil_score))
 
 
+def get_dataset_community_dist_metric(community, dist_matrix):
+
+    num_images = dist_matrix.shape[0]
+    num_communities = len(community)
+    ret = np.zeros((num_images, num_communities))
+
+    for img_i in range(0,num_images):
+            
+        for c_idx,c in enumerate(community):
+
+            dist_wrt_c = []
+
+            for img_j in c:
+                dist_wrt_c.append(dist_matrix[img_i,img_j])
+
+            dist_wrt_c = np.array(dist_wrt_c)
+            dist_wrt_c_gt0 = dist_wrt_c[dist_wrt_c > 0]
+            ret[img_i,c_idx] = round(np.max(dist_wrt_c_gt0),3)
+    
+    dataset_community_dist = round(np.mean(np.min(ret, axis=1)),3)
+    
+    return(dataset_community_dist)
+
+
 def get_community_probability_membership(community, dist_matrix):
 
     def assign_probability(dist_vector, exponentiate=True):
@@ -90,41 +114,36 @@ def get_community_probability_membership(community, dist_matrix):
 
     num_images = dist_matrix.shape[0]
 
-    img_community_median_corr_map = {}
-    img_community_min_corr_map = {}
-
-    img_community_median_prob_map = {}
+    img_community_min_dist_map = {}
     img_community_min_prob_map = {}
 
     for img_i in range(0,num_images):
 
-        corr_comm_list = []
-        img_community_median_corr_map[img_i] = []
-        img_community_min_corr_map[img_i] = []
+        img_community_min_dist_map[img_i] = []
 
         if len(community) > 1:
             
             for c_idx,c in enumerate(community):
 
-                corr_wrt_c = []
+                dist_wrt_c = []
 
                 for img_j in c:
-                    corr_wrt_c.append(dist_matrix[img_i,img_j])
+                    dist_wrt_c.append(dist_matrix[img_i,img_j])
 
-                corr_wrt_c = np.array(corr_wrt_c)
-                corr_wrt_c_gt0 = corr_wrt_c[corr_wrt_c > 0]
+                dist_wrt_c = np.array(dist_wrt_c)
+                dist_wrt_c_gt0 = dist_wrt_c[dist_wrt_c > 0]
                 
-                img_community_min_corr_map[img_i].append(round(np.min(corr_wrt_c_gt0),3))
+                img_community_min_dist_map[img_i].append(round(np.min(dist_wrt_c_gt0),3))
         else:
 
-            img_community_min_corr_map[img_i] = [1]
+            img_community_min_dist_map[img_i] = [1]
 
 
     for img_i in range(0,num_images):
-        softmax_prob_min = assign_probability(np.array(img_community_min_corr_map[img_i]), exponentiate=True)
+        softmax_prob_min = assign_probability(np.array(img_community_min_dist_map[img_i]), exponentiate=True)
         img_community_min_prob_map[img_i] = softmax_prob_min
 
-    return((img_community_min_corr_map, img_community_min_prob_map))
+    return((img_community_min_dist_map, img_community_min_prob_map))
 
 
 def get_community_total_counts(img_community_min_prob_map, img_count_map = None):
@@ -153,6 +172,7 @@ def get_min_community_threshold(th):
     return(min_community_threshold)
 
 
+#obsolete 
 def get_median_dist_between_clusterij(dist_matrix, image_list_i, image_list_j):
     
     #get image with closest median distance to all other images 
@@ -298,15 +318,16 @@ def get_cluster_community_map(i, dist_matrix, percentile, particle_count_dict_cl
         community_original_images.append(tmp)
     
     if len(community) > 0: 
-        img_community_min_corr_map, img_community_min_prob_map = get_community_probability_membership(community, dist_matrix)
+        img_community_min_dist_map, img_community_min_prob_map = get_community_probability_membership(community, dist_matrix)
         img_community_min_prob_matrix, community_prob =  get_community_total_counts(img_community_min_prob_map) #not passing in count info
         img_community_count_matrix, community_count = get_community_total_counts(img_community_min_prob_map, particle_count_dict_cluster_c)
-        normalized_community_dist_metric = calc_normalized_community_dist_metric_parallel(community, community_count, dist_matrix)
         max_community_weight = calc_max_community_weight(community, community_count)
+        dataset_community_dist = get_dataset_community_dist_metric(community, dist_matrix)
     else:
         community_count = np.array([])
         max_community_weight = -1
         img_community_min_prob_matrix = np.ones((dist_matrix.shape[0],1))
+        dataset_community_dist = 1
         
     ref_image_list = []
     for image_list in community:
@@ -316,7 +337,8 @@ def get_cluster_community_map(i, dist_matrix, percentile, particle_count_dict_cl
     
     #print('i done=%d' % i)
        
-    return(community, community_original_images, dist_threshold, sil_score, community_count, ref_image_list, max_community_weight, img_community_min_prob_matrix)
+    return(community, community_original_images, dist_threshold, dataset_community_dist, community_count, ref_image_list, max_community_weight, img_community_min_prob_matrix)
+
 
 
 def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, edge_dist_matrix, corr_only, particle_count_dict=None):
@@ -331,7 +353,8 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
     cluster_ref_img_map = {}
     cluster_max_community_weight_map = {}
     cluster_img_min_prob_matrix_map = {}
-
+    cluster_dataset_community_dist_map = {}
+    
     for c in unique_clusters:
         
         print('cluster=%d' % c)
@@ -367,30 +390,35 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
             percentile = edge_corr_percentile
 
         fd = delayed(get_cluster_community_map)    
-        out = Parallel(backend="threading", n_jobs=-1)(fd(i, dist_matrix, percentile, particle_count_dict_cluster_c, image_list_hclust_cluster_c) for i in range(0,np.min([len(percentile),15])))
+        out = Parallel(backend="threading", n_jobs=1)(fd(i, dist_matrix, percentile, particle_count_dict_cluster_c, image_list_hclust_cluster_c) for i in range(0,np.min([len(percentile),15])))
         print('DONE with cluster=%d' % c)
         community = [val[0] for val in out] #list of lists of lists (each community is a list of lists)
         community_original_images = [val[1] for val in out] #list of lists of lists (each community is a list of lists)
         dist_threshold = [val[2] for val in out]
-        sil_score = [val[3] for val in out]  #list  
+        dataset_community_dist = [val[3] for val in out]
         community_count = [val[4] for val in out] #list of lists (length of each sublist corresponds to number of community for that threshold)
         ref_image_list = [val[5] for val in out] #list of lists (length of each sublist corresponds to number of community for that threshold)
         max_community_weight = [val[6] for val in out]  #list
         img_community_min_prob_matrix = [val[7] for val in out]
         
+        #print(img_community_median_dist_map)
+        
         cluster_community_map[c] = community          
         cluster_community_original_image_map[c] = community_original_images
         cluster_dist_threshold_map[c] = dist_threshold
-        cluster_sil_score_map[c] = sil_score
+        cluster_dataset_community_dist_map[c] = dataset_community_dist
         cluster_community_count_map[c] = community_count
         cluster_ref_img_map[c] = ref_image_list
         cluster_max_community_weight_map[c] = max_community_weight 
         cluster_img_min_prob_matrix_map[c] = img_community_min_prob_matrix
+        
+    return((cluster_community_map, cluster_dist_threshold_map, cluster_dataset_community_dist_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, cluster_img_min_prob_matrix_map))
 
-    return((cluster_community_map, cluster_dist_threshold_map, cluster_sil_score_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, cluster_img_min_prob_matrix_map))
 
 
-def get_optimal_community_map(input_dir, cluster_community_map, cluster_sil_score_map):
+
+#obsolete
+def get_optimal_community_map_old(input_dir, cluster_community_map, cluster_sil_score_map):
 
     optimal_community_map = {}
 
@@ -427,132 +455,19 @@ def get_optimal_community_map(input_dir, cluster_community_map, cluster_sil_scor
         optimal_community_map[c] = max_sil_score_idx
     
     return(optimal_community_map)
- 
+
+
+def get_optimal_community_map(cluster_dataset_community_dist_map):
+
+    optimal_community_map = {}
+    
+    for c in cluster_dataset_community_dist_map:
+        
+        optimal_community_map[c] = np.argmin(cluster_dataset_community_dist_map[c])
+    
+    return(optimal_community_map)
         
 
-def get_cluster_info(protein, corr_cluster_labels, corr_dist_matrix, edge_dist_matrix, corr_only, particle_count_dict=None):
-
-    unique_clusters = np.unique(corr_cluster_labels)
-
-    cluster_community_map = {}
-    cluster_community_original_image_map = {}
-    cluster_community_count_map = {}
-    cluster_ref_img_map = {}
-    cluster_max_community_weight_map = {}
-
-    for c in unique_clusters:
-        
-        print('cluster=%d' % c)
-
-        image_list_hclust_cluster_c = np.genfromtxt('./output/%s/clean/class_average_panel_plots/image_list_hclust_cluster_%d.csv' % (protein,int(c)), delimiter=',')
-        image_list_hclust_cluster_c = image_list_hclust_cluster_c.astype(int)
-        
-        min_community_threshold = get_min_community_threshold(len(image_list_hclust_cluster_c)) 
-        print('min comm thresh = %d' % min_community_threshold)
-        
-        particle_count_dict_cluster_c = get_particle_count_dict_cluster(particle_count_dict, image_list_hclust_cluster_c)
-        edge_dist_matrix_subset = edge_dist_matrix[np.ix_(image_list_hclust_cluster_c, image_list_hclust_cluster_c)]    
-        corr_dist_matrix_subset = corr_dist_matrix[np.ix_(image_list_hclust_cluster_c, image_list_hclust_cluster_c)]
-            
-        edge_corr_dist_matrix_subset = edge_dist_matrix_subset/(1-corr_dist_matrix_subset)
-        #normalized between 0-1 so we can assign a probability in the same manner as we did for correlation based distance
-        #edge_corr_dist_matrix_subset_norm = (edge_corr_dist_matrix_subset - np.min(edge_corr_dist_matrix_subset.flatten())) / (np.max(edge_corr_dist_matrix_subset.flatten()) - np.min(edge_corr_dist_matrix_subset.flatten())) 
-
-        edge_corr_percentile = np.percentile(edge_corr_dist_matrix_subset.flatten(), range(1,100))
-        edge_corr_percentile = edge_corr_percentile[edge_corr_percentile > 0]
-        
-        corr_percentile = np.percentile(corr_dist_matrix_subset.flatten(), range(1,100))
-        corr_percentile = corr_percentile[corr_percentile > 0]
-        
-        max_sil_score = -1
-        community_opt = [] 
-         
-        if corr_only:
-            dist_matrix = corr_dist_matrix_subset
-            percentile = corr_percentile
-        else:
-            dist_matrix = edge_corr_dist_matrix_subset
-            percentile = edge_corr_percentile
-
-        
-        for i in range(0,np.min([len(percentile),50])):
-           
-            dist_threshold = percentile[i]
-                
-            gt_threshold_idx = (np.argwhere(dist_matrix > dist_threshold))
-            sparse_matrix = np.copy(dist_matrix)
-            sparse_matrix[tuple(gt_threshold_idx.T)] = 0
-            community, sil_score = get_community(sparse_matrix, dist_matrix)      
-            print(community)
-            print(sil_score) 
-                
-            if ((sil_score > max_sil_score) and (len(community) >= min_community_threshold)):
-                
-                community_opt = community
-                max_sil_score = sil_score
-                 
-                community_opt_original_images = []
-                for outer_val in community_opt:
-                    tmp = []
-                    for inner_val in outer_val:
-                        tmp.append(image_list_hclust_cluster_c[inner_val])
-                    community_opt_original_images.append(tmp)
-                    
-                cluster_community_map[c] = community_opt
-                cluster_community_original_image_map[c] = community_opt_original_images
-
-        #try again..
-        if len(community_opt) == 0:
-
-            for i in range(0,10):
-               
-                dist_threshold = percentile[i]
-                    
-                gt_threshold_idx = (np.argwhere(dist_matrix > dist_threshold))
-                sparse_matrix = np.copy(dist_matrix)
-                sparse_matrix[tuple(gt_threshold_idx.T)] = 0
-                community, sil_score = get_community(sparse_matrix, dist_matrix)      
-                print(community)
-                print(sil_score) 
-                    
-                if len(community) > 0:
-                    
-                    community_opt = community
-                    max_sil_score = sil_score
-                     
-                    community_opt_original_images = []
-                    for outer_val in community_opt:
-                        tmp = []
-                        for inner_val in outer_val:
-                            tmp.append(image_list_hclust_cluster_c[inner_val])
-                        community_opt_original_images.append(tmp)
-                        
-                    cluster_community_map[c] = community_opt
-                    cluster_community_original_image_map[c] = community_opt_original_images
-                    
-                    break
-                
-                            
-        img_community_min_corr_map, img_community_min_prob_map = get_community_probability_membership(community_opt, dist_matrix)
-        img_community_count_matrix, community_count = get_community_total_counts(img_community_min_prob_map, particle_count_dict_cluster_c)
-
-        cluster_community_count_map[c] = community_count
-
-        for image_list in community_opt:
-            ref_img = get_ref_image(dist_matrix, image_list, particle_count_dict_cluster_c)
-            orig_ref_img = image_list_hclust_cluster_c[ref_img]
-            if c in cluster_ref_img_map:
-                cluster_ref_img_map[c].append([ref_img, orig_ref_img])
-            else:
-                cluster_ref_img_map[c] = [[ref_img, orig_ref_img]]
-        
-        print(cluster_community_map)
-
-        normalized_community_dist_metric = calc_normalized_community_dist_metric(cluster_community_map, cluster_community_count_map, c, dist_matrix)
-        cluster_max_community_weight_map[c] = normalized_between_community_dist_metric
-        
-
-    return((cluster_community_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map))
 
 
 #####
@@ -779,11 +694,11 @@ def hist_wrapper(input_dir):
             dist_metric_str = 'corr'
             print('correlation based community detection')
          
-        cluster_community_map, cluster_dist_threshold_map, cluster_sil_score_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, cluster_img_min_prob_matrix_map = get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, edge_dist_matrix, corr_only, particle_count_dict)
+        cluster_community_map, cluster_dist_threshold_map, cluster_dataset_community_dist_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, cluster_img_min_prob_matrix_map = get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, edge_dist_matrix, corr_only, particle_count_dict)
 
-        optimal_community_map = get_optimal_community_map(input_dir, cluster_community_map, cluster_sil_score_map)
+        optimal_community_map = get_optimal_community_map(cluster_dataset_community_dist_map)
 
-        hist_data[dist_metric_str] = [cluster_community_map, cluster_dist_threshold_map, cluster_sil_score_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, optimal_community_map]
+        hist_data[dist_metric_str] = [cluster_community_map, cluster_dist_threshold_map, cluster_dataset_community_dist_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, optimal_community_map]
         print('saving image probility matrix')
         save_img_community_min_prob_matrix(input_dir, cluster_img_min_prob_matrix_map, optimal_community_map, corr_only)        
         print('saving ref images')
