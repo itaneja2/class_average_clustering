@@ -390,7 +390,7 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
             percentile = edge_corr_percentile
 
         fd = delayed(get_cluster_community_map)    
-        out = Parallel(backend="threading", n_jobs=1)(fd(i, dist_matrix, percentile, particle_count_dict_cluster_c, image_list_hclust_cluster_c) for i in range(0,np.min([len(percentile),15])))
+        out = Parallel(backend="threading", n_jobs=1)(fd(i, dist_matrix, percentile, particle_count_dict_cluster_c, image_list_hclust_cluster_c) for i in range(0,np.min([len(percentile),20])))
         print('DONE with cluster=%d' % c)
         community = [val[0] for val in out] #list of lists of lists (each community is a list of lists)
         community_original_images = [val[1] for val in out] #list of lists of lists (each community is a list of lists)
