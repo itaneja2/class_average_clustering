@@ -519,8 +519,6 @@ if __name__=="__main__":
         scale_factor_str = str(args.scale_factor)
 
     mirror_str = str(int(args.mirror))
-    print(mirror_str)
-    sys.exit()
 
     if args.output_dir is None:
         output_dir = '%s_summary_mirror=%s_scale=%s' % ((args.mrc_file).split('.mrc')[0], mirror_str, scale_factor_str)
