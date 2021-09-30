@@ -303,20 +303,16 @@ def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_ro
     return(np.max(correlation_dist_matrix), np.min(hausdroff_dist_matrix), angle_optimal, relative_diff_y_optimal, relative_diff_x_optimal)
 
 
-def dist_write(slice_, dist_wrapper, dist_func, corr_dist_matrix, edge_dist_matrix, rot_angle_matrix, ytrans_matrix, xtrans_matrix, mirror_indicator_matrix, rotation_matrix_map, max_shape_map, image_2d_matrix, mirror, mrc_height, mrc_width):
+def dist_write(slice_, dist_wrapper, dist_func, corr_dist_matrix, edge_dist_matrix, rot_angle_matrix, ytrans_matrix, xtrans_matrix, mirror_indicator_matrix, mirror, mrc_height, mrc_width):
     """Write in-place to a slice of a distance matrix."""
-    corr_dist_matrix_slice, edge_dist_matrix_slice, angle_slice, y_slice, x_slice, mirror_slice = dist_wrapper(slice_, rotation_matrix_map, max_shape_map, image_2d_matrix, mirror, mrc_height, mrc_width, dist_func)
+    corr_dist_matrix_slice, edge_dist_matrix_slice, angle_slice, y_slice, x_slice, mirror_slice = dist_wrapper(slice_, mirror, mrc_height, mrc_width, dist_func)
 
-    corr_dist_matrix[slice_,:] = corr_dist_matrix_slice
-    edge_dist_matrix[slice_,:] = edge_dist_matrix_slice
-    
-    rot_angle_matrix[slice_,:] = angle_slice
-    ytrans_matrix[slice_,:] = y_slice 
-    xtrans_matrix[slice_,:] = x_slice 
-    mirror_indicator_matrix[slice_,:] = mirror_slice
+
+    return((slice_, corr_dist_matrix_slice, edge_dist_matrix_slice, angle_slice, y_slice, x_slice, mirror_slice))
+
     
 
-def parallel_pairwise_dist_matrix(rotation_matrix_map, max_shape_map, image_2d_matrix, mirror, mrc_height, mrc_width, dist_wrapper, dist_func, n_jobs):
+def parallel_pairwise_dist_matrix(mirror, mrc_height, mrc_width, dist_wrapper, dist_func, n_jobs):
     """Break the pairwise matrix in n_jobs even slices
     and compute them in parallel."""
 
@@ -329,14 +325,23 @@ def parallel_pairwise_dist_matrix(rotation_matrix_map, max_shape_map, image_2d_m
     xtrans_ret = np.zeros((image_2d_matrix.shape[0], image_2d_matrix.shape[0]))
     mirror_ret = np.zeros((image_2d_matrix.shape[0], image_2d_matrix.shape[0]))
 
-    Parallel(backend="threading", n_jobs=n_jobs)(
-        fd(s, dist_wrapper, dist_func, corr_ret, edge_ret, rot_angle_ret, ytrans_ret, xtrans_ret, mirror_ret, rotation_matrix_map, max_shape_map, image_2d_matrix, mirror, mrc_height, mrc_width)
+    result = Parallel(backend="loky", n_jobs=n_jobs, verbose=10)(
+        fd(s, dist_wrapper, dist_func, corr_ret, edge_ret, rot_angle_ret, ytrans_ret, xtrans_ret, mirror_ret, mirror, mrc_height, mrc_width)
         for s in gen_even_slices(image_2d_matrix.shape[0], effective_n_jobs(n_jobs)))
+
+    for i in range(0,len(result)):
+        slice_ = result[i][0]
+        corr_ret[slice_,:] = result[i][1] 
+        edge_ret[slice_,:] = result[i][2] 
+        rot_angle_ret[slice_,:] = result[i][3] 
+        ytrans_ret[slice_,:] = result[i][4] 
+        xtrans_ret[slice_,:] = result[i][5] 
+        mirror_ret[slice_,:] = result[i][6] 
     
     return((corr_ret, edge_ret, rot_angle_ret, ytrans_ret, xtrans_ret, mirror_ret))
 
 
-def rot_trans_invariant_dist_wrapper(slice_, rotation_matrix_map, max_shape_map, image_2d_matrix, mirror, mrc_height, mrc_width, dist_func):
+def rot_trans_invariant_dist_wrapper(slice_, mirror, mrc_height, mrc_width, dist_func):
  
     num_images_subset = (slice_.stop - slice_.start)
     num_images_all = image_2d_matrix.shape[0]
@@ -466,37 +471,6 @@ def gen_clean_input(mrc_file, particle_count_file, output_dir):
     return(image_2d_matrix_clean)
 
 
-'''filename = 'cryosparc_P127_J4_020_class_averages_opt.mrc'
-#filename = 'cryosparc_P50_J436_020_class_averages.mrc'
-
-for filename in ['KaiC_class_averages.mrc', 'cryosparc_P50_J436_020_class_averages.mrc', 'hLonOpenClosed_class_averages.mrc', 'cryosparc_P127_J4_020_class_averages.mrc']:
-#for filename in ['KaiC_class_averages.mrc']:
-
-    print(filename)
-
-    filename_wo_type = filename.split('.')[0]
-    mrc_path = './raw_data'
-    mrc_file = '%s/%s.mrc' % (mrc_path,filename_wo_type)
-
-    image_2d_matrix = get_clean_image_2d_matrix(mrc_file)
-
-    #print(image_2d_matrix.shape)
-
-    start_time = time.monotonic()
-    blur = False
-    print('calculating rotated versions of images')
-    image_2d_rotation_matrix_map, image_2d_rotation_matrix_max_shape_map = get_image_rotation_matrix(image_2d_matrix)
-    print('calculating pairwise dist matrix')
-    corr_dist_matrix, edge_dist_matrix, rot_angle_matrix, ytrans_matrix, xtrans_matrix = parallel_pairwise_dist_matrix(image_2d_rotation_matrix_map, image_2d_rotation_matrix_max_shape_map, image_2d_matrix, rot_trans_invariant_dist_wrapper, rot_trans_invariant_dist_optimized, blur, -1)
-    print('saving dist matrix - clean')
-
-    save_matrix(corr_dist_matrix, 'corr', filename_wo_type, blur, start_time)
-    save_matrix(edge_dist_matrix, 'haus', filename_wo_type, blur, start_time)
-    save_matrix(rot_angle_matrix, 'rot', filename_wo_type, blur, start_time)
-    save_matrix(ytrans_matrix, 'ytrans', filename_wo_type, blur, start_time)
-    save_matrix(xtrans_matrix, 'xtrans', filename_wo_type, blur, start_time)'''
-
-
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser()
@@ -506,6 +480,15 @@ if __name__=="__main__":
     parser.add_argument("--mirror", help="Whether or not to run calculations for original class average and its mirror image (defaults to 1)", type=int, default=1)  
     parser.add_argument("--output_dir", help="Directory to save output files (defaults to directory where xyz.mrc file is stored and folder is called xyz_summary_mirror=0/1_scale=num)")
     args = parser.parse_args()
+
+    if '.cs' in args.star_file:
+        print('converting cs to star file')
+        output_star_file = args.star_file.replace('.cs','.star')
+        command = "cs2star %s %s" % (args.star_file, output_star_file)
+        subprocess.call(['/bin/bash', '-i', '-c', command])
+        args.star_file = output_star_file
+        print('converted cs to star file')
+        
 
     if '.mrc' not in args.mrc_file:
         sys.exit('mrc_file must have extension .mrc')
@@ -534,6 +517,7 @@ if __name__=="__main__":
     with open(filepath_txt_file, "w") as text_file:
         text_file.write(output_dir_abs_path_norm)
 
+
     particle_count_file = get_particle_counts(args.star_file) 
     
     image_2d_matrix = gen_clean_input(args.mrc_file, particle_count_file, output_dir)
@@ -544,8 +528,9 @@ if __name__=="__main__":
     print('calculating rotated versions of images')
     rotation_matrix_map, max_shape_map = get_image_rotation_matrix(image_2d_matrix, args.scale_factor, args.mirror)
     print('calculating pairwise dist matrix')
-    corr_dist_matrix, edge_dist_matrix, rot_angle_matrix, ytrans_matrix, xtrans_matrix, mirror_indicator_matrix = parallel_pairwise_dist_matrix(rotation_matrix_map, max_shape_map, image_2d_matrix, args.mirror, mrc_height, mrc_width, rot_trans_invariant_dist_wrapper, rot_trans_invariant_dist_optimized, -1)
+    corr_dist_matrix, edge_dist_matrix, rot_angle_matrix, ytrans_matrix, xtrans_matrix, mirror_indicator_matrix = parallel_pairwise_dist_matrix(args.mirror, mrc_height, mrc_width, rot_trans_invariant_dist_wrapper, rot_trans_invariant_dist_optimized, -1)
     print('saving dist matrix - clean')
+
 
     save_matrix(corr_dist_matrix, 'corr', output_dir, start_time)
     save_matrix(edge_dist_matrix, 'edge', output_dir, start_time)
