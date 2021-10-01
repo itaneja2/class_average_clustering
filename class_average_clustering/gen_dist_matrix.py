@@ -500,6 +500,7 @@ if __name__=="__main__":
     else:
         if args.scale_factor > 1 or args.scale_factor < 0:
             sys.exit('scale factor must be between 0 and 1 (exclusive)')
+        args.scale_factor = round(args.scale_factor,1)
         scale_factor_str = str(args.scale_factor)
 
     mirror_str = str(int(args.mirror))
