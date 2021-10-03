@@ -24,15 +24,11 @@ def calc_spectral_cluster_labels(input_dir, dist_type, num_clusters):
 
     dist_matrix = np.genfromtxt('%s/pairwise_matrix/%s_dist_matrix.csv' % (input_dir, dist_type), delimiter=',') 
     
-    print(dist_matrix)
-
     if dist_type == 'corr':
         spectral_dist_matrix = 1-dist_matrix
     else:
         spectral_dist_matrix = dist_matrix
         spectral_dist_matrix = np.exp(-spectral_dist_matrix ** 2 / (2. * delta ** 2))
-
-    print(spectral_dist_matrix)
 
     spectral_model_dict = {}
     spectral_model_sil_score = {}    
@@ -54,6 +50,7 @@ def calc_spectral_cluster_labels(input_dir, dist_type, num_clusters):
         optimal_cluster = clustering
         max_sil_score = sil_score
 
+        print("Num Clusters = 1")
         print(sil_score)
         print(clustering.labels_)
 
@@ -73,6 +70,7 @@ def calc_spectral_cluster_labels(input_dir, dist_type, num_clusters):
                     max_sil_score = sil_score
                     optimal_cluster = clustering
 
+            print("Num Clusters = %d" % num_clusters)
             print(sil_score)
             print(clustering.labels_)
 
@@ -156,8 +154,6 @@ def gen_image_panel(input_dir, image_2d_matrix, particle_count_dict):
         else:
             cluster_mapping[cluster_labels[i]].append(i)
 
-    print(cluster_mapping)
-
     for c in sorted(cluster_mapping.keys()):
 
         image_list = np.array(cluster_mapping[c]) 
@@ -170,11 +166,8 @@ def gen_image_panel(input_dir, image_2d_matrix, particle_count_dict):
              
         corresponding_images, cluster_sub_labels = calc_hierarchical_cluster(edge_corr_ratio_dist_matrix_subset)
         image_list_hclust_ordered = image_list[corresponding_images]
-        print(cluster_sub_labels)
-        print(image_list_hclust_ordered)
 
         particle_count_dict_cluster_c = get_particle_count_dict_cluster(particle_count_dict, image_list_hclust_ordered)
-        print(particle_count_dict_cluster_c)
 
         '''counts = collections.Counter(cluster_sub_labels)
         cluster_sub_labels_sorted_by_freq = sorted(cluster_sub_labels, key=lambda x: -counts[x])
@@ -209,7 +202,6 @@ def calc_hierarchical_cluster(dist_matrix):
     dendogram_nodes = [str(i) for i in range(1,dist_matrix.shape[0]+1)]
 
     clusters = {}
-    #linkage_mat = linkage(squareform(dist_matrix), method = 'complete', optimal_ordering=True)
     linkage_mat = linkage(squareform(dist_matrix), method = 'average', optimal_ordering=True)
     plt.figure(figsize=(150,150))
     dn = dendrogram(linkage_mat)

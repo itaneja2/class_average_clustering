@@ -357,13 +357,10 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
     
     for c in unique_clusters:
         
-        print('cluster=%d' % c)
-
         image_list_hclust_cluster_c = np.genfromtxt('%s/class_average_panel_plots/image_list_hclust_cluster_%d.csv' % (input_dir, int(c)), delimiter=',')
         image_list_hclust_cluster_c = image_list_hclust_cluster_c.astype(int)
         
         min_community_threshold = get_min_community_threshold(len(image_list_hclust_cluster_c)) 
-        print('min comm thresh = %d' % min_community_threshold)
         
         particle_count_dict_cluster_c = get_particle_count_dict_cluster(particle_count_dict, image_list_hclust_cluster_c)
         edge_dist_matrix_subset = edge_dist_matrix[np.ix_(image_list_hclust_cluster_c, image_list_hclust_cluster_c)]    
@@ -400,9 +397,7 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
         ref_image_list = [val[5] for val in out] #list of lists (length of each sublist corresponds to number of community for that threshold)
         max_community_weight = [val[6] for val in out]  #list
         img_community_min_prob_matrix = [val[7] for val in out]
-        
-        #print(img_community_median_dist_map)
-        
+         
         cluster_community_map[c] = community          
         cluster_community_original_image_map[c] = community_original_images
         cluster_dist_threshold_map[c] = dist_threshold
@@ -515,7 +510,7 @@ def save_ref_image(input_dir, cluster_ref_img_map, corr_only):
 
     for c in cluster_ref_img_map:
 
-        print('saving ref image for cluster %d' % c)
+        #print('saving ref image for cluster %d' % c)
 
         image_list_hclust_cluster_c = np.genfromtxt('%s/class_average_panel_plots/image_list_hclust_cluster_%d.csv' % (input_dir, int(c)), delimiter=',')
         image_list_hclust_cluster_c = image_list_hclust_cluster_c.astype(int)
@@ -529,9 +524,7 @@ def save_ref_image(input_dir, cluster_ref_img_map, corr_only):
         remove_files_in_folder(ref_img_save_dir)
   
         all_ref_img = np.array(cluster_ref_img_map[c])
-        #print(all_ref_img)
         all_ref_img_unique = np.sort(np.unique(np.concatenate(all_ref_img)))
-        #print(all_ref_img_unique)
 
         for i in range(0,len(all_ref_img_unique)):
             
@@ -682,8 +675,6 @@ def hist_wrapper(input_dir):
     Path(save_path).mkdir(parents=True, exist_ok=True)
 
     for i in range(0,2):
-
-        print('i=%d' % i)
 
         if i == 0:
             corr_only = False
