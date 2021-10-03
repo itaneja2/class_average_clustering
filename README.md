@@ -27,11 +27,11 @@ Generates clusters, sorts class averages, and generates relevant input for histo
 
 1.  Generate the input pairwise distance matrices:
 
-		python gen_dist_matrix.py --mrc_file /path/to/mrc_file.mrc --star_file /path/to/star_file.star
+		python gen_dist_matrix.py --mrc_file /path/to/mrc_file.mrc --metadata_file /path/to/metadata_file.star
 	
 	You can pass in additional arguments as follows: 
 
-		python gen_dist_matrix.py --mrc_file /path/to/mrc_file.mrc --star_file /path/to/star_file.star --mirror 0 --scale .5 --ouptut_dir /path/to/folder/storing/output
+		python gen_dist_matrix.py --mrc_file /path/to/mrc_file.mrc --metadata_file /path/to/metadata_file.star --mirror 0 --scale .5 --ouptut_dir /path/to/folder/storing/output
 		
 	* By default, each image and its mirror image is used in the calculations of the distance matrices. If your class averages are generally symmetric (symmetric in the sense that you can flip the image, rotate it, and you will arrive at the original image), you can turn off the mirror calculation by setting `--mirror 0`. This will speed up the calculations by a factor 2. 
 	* You have the option to downsample your image by a factor between 0 and 1 using the `--scale` option. This can lead to a significant speedup in the calculations. For reference, going from a 224 by 224 image to 112 by 112 image led to a 4X speedup.  Empirically, it appears individual class averages should have dimensions of at at least around 60-80 by 60-80. By default, images are not downsampled. 
