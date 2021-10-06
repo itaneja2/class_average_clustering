@@ -25,27 +25,9 @@ from helper_functions import load_obj, save_obj, sort_dict
 from extract_relion_particle_counts import get_particle_counts
 
 
-def remove_neg_values(img):
-    img[img < 0] = 0
-    return(img)
-
-
-def crop_image_cv(img):
-    img_s = cv2.convertScaleAbs(img)
-    x, y, w, h = cv2.boundingRect(img_s)
-    tol = 10
-    xmin_tol = np.max([0, x-tol])
-    ymin_tol = np.max([0, y-tol])
-    xmax_tol = np.min([img.shape[1],x+w+tol])
-    ymax_tol = np.min([img.shape[0],y+h+tol])
-    
-    return(img[ymin_tol:ymax_tol, xmin_tol:xmax_tol])
-
-
 def crop_image(img):    
     row_idx, col_idx = np.nonzero(img)
     return(img[np.min(row_idx):np.max(row_idx)+1,np.min(col_idx):np.max(col_idx)+1])
-
 
 
 def norm_cross_correlation_cv(img1, img2):
@@ -71,7 +53,6 @@ def get_image_rotation_matrix(image_2d_matrix, scale_factor, mirror):
 
     for i in range(0,image_2d_matrix.shape[0]):
 
-        #curr_img = remove_neg_values(np.copy(image_2d_matrix[i,:,:]))
         curr_img = np.copy(image_2d_matrix[i,:,:])
 
         if scale_factor is not None:
@@ -97,15 +78,6 @@ def get_image_rotation_matrix(image_2d_matrix, scale_factor, mirror):
         rotation_matrix_map['mirror'] = image_2d_rotation_mirror_matrix_map
         max_shape_map['mirror'] = image_2d_rotation_mirror_matrix_max_shape_map
 
-    '''for i in range(0,image_2d_matrix.shape[0]):
-
-        if mirror == 1:
-
-            norm_cross_corr = rot_trans_invariant_dist_optimized(rotation_matrix_map, max_shape_map, i, i, True, image_2d_matrix.shape[1], image_2d_matrix.shape[2], True)
-            if norm_cross_corr < .9:
-                image_symmetry_indicator_map[i] = 0
-            else:
-                image_symmetry_indicator_map[i] = 1'''
                      
     return(rotation_matrix_map, max_shape_map)           
        
@@ -231,13 +203,13 @@ def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_ro
         correlation_params[i,1] = relative_diff_y
         correlation_params[i,2] = relative_diff_x
 
-    if corr_only:
-        return(np.max(correlation_dist_matrix))
-
     max_corr_idx = np.argmax(correlation_dist_matrix)   
     angle_optimal = correlation_params[max_corr_idx,0] 
     relative_diff_y_optimal = correlation_params[max_corr_idx,1]
     relative_diff_x_optimal = correlation_params[max_corr_idx,2] 
+
+    if corr_only:
+        return(np.max(correlation_dist_matrix), angle_optimal, relative_diff_y_optimal, relative_diff_x_optimal)
     
     zero_val_mapping = img2_rotation_2d_matrix_mean[max_corr_idx]/img2_rotation_2d_matrix_std[max_corr_idx]
     img2_shifted = ndimage.shift(np.copy(img2_rotation_2d_matrix[max_corr_idx,:,:]), (relative_diff_y_optimal, relative_diff_x_optimal), cval = 0-zero_val_mapping) 
@@ -303,7 +275,7 @@ def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_ro
     return(np.max(correlation_dist_matrix), np.min(hausdroff_dist_matrix), angle_optimal, relative_diff_y_optimal, relative_diff_x_optimal)
 
 
-def dist_write(slice_, dist_wrapper, dist_func, corr_dist_matrix, edge_dist_matrix, rot_angle_matrix, ytrans_matrix, xtrans_matrix, mirror_indicator_matrix, mirror, mrc_height, mrc_width):
+def dist_write(slice_, dist_wrapper, dist_func, mirror, mrc_height, mrc_width):
     """Write in-place to a slice of a distance matrix."""
     corr_dist_matrix_slice, edge_dist_matrix_slice, angle_slice, y_slice, x_slice, mirror_slice = dist_wrapper(slice_, mirror, mrc_height, mrc_width, dist_func)
 
@@ -326,7 +298,7 @@ def parallel_pairwise_dist_matrix(mirror, mrc_height, mrc_width, dist_wrapper, d
     mirror_ret = np.zeros((image_2d_matrix.shape[0], image_2d_matrix.shape[0]))
 
     result = Parallel(backend="loky", n_jobs=n_jobs, verbose=10)(
-        fd(s, dist_wrapper, dist_func, corr_ret, edge_ret, rot_angle_ret, ytrans_ret, xtrans_ret, mirror_ret, mirror, mrc_height, mrc_width)
+        fd(s, dist_wrapper, dist_func, mirror, mrc_height, mrc_width)
         for s in gen_even_slices(image_2d_matrix.shape[0], effective_n_jobs(n_jobs)))
 
     for i in range(0,len(result)):
@@ -407,15 +379,17 @@ def save_matrix(dist_matrix, matrix_type, output_dir, start_time):
     output_dir = '%s/pairwise_matrix' % output_dir
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    symm_dist_matrix = convert_upper_triang_mat_to_symmetric(dist_matrix, matrix_type)
+    if matrix_type in ['corr', 'edge']: 
+        dist_matrix = convert_upper_triang_mat_to_symmetric(dist_matrix, matrix_type)
     
     if matrix_type == 'corr':
-        symm_dist_matrix = 1-symm_dist_matrix
+        dist_matrix = 1-dist_matrix
 
     if matrix_type in ['corr', 'edge']:
-        np.savetxt('%s/%s_dist_matrix.csv' % (output_dir, matrix_type), symm_dist_matrix, delimiter=',')    
+        np.savetxt('%s/%s_dist_matrix.csv' % (output_dir, matrix_type), dist_matrix, delimiter=',')    
     else:
-        np.savetxt('%s/%s_matrix.csv' % (output_dir, matrix_type), symm_dist_matrix, delimiter=',') 
+        np.savetxt('%s/%s_matrix.csv' % (output_dir, matrix_type), dist_matrix, delimiter=',') 
+
     np.savetxt('%s/execution_time.csv' % output_dir, np.array([(time.monotonic() - start_time)/60])) 
 
 def gen_clean_input(mrc_file, particle_count_file, output_dir):
