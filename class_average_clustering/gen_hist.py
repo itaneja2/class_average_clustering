@@ -114,12 +114,7 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
                 
             curr_community_original_image_list = [image_list_cluster_c[x] for x in curr_community_image_list]
             curr_ref_original_image_num = image_list_cluster_c[curr_ref_image_num]
-
-            print(curr_community_image_list)
-            print(curr_ref_image_num)
-            print(curr_community_original_image_list)
-            print(curr_ref_original_image_num)
-            
+ 
             ###
 
             max_shape = np.array([0,0])
@@ -174,25 +169,33 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
                     rot_angle = 0
                     mirror = 0
 
-                print('here')
-                print(curr_original_image_num)
-                print(xtrans)
-                print(ytrans)
-                print(rot_angle)
-                print(mirror)
 
                 transformed_img = apply_transformations(curr_original_image, xtrans, ytrans, rot_angle, mirror, max_height, max_width)
                 
-                '''img_scaled = minmax_scale(curr_original_image.ravel(), feature_range=(0,255)).reshape(curr_original_image.shape)
-                img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
-                avg_img_save_path = '%d_o.png' % curr_original_image_num
-                cv2.imwrite(avg_img_save_path, img_scaled)
+                '''if i == 1 and j == 0:
 
+                    print('here')
+                    print(curr_original_image_num)
+                    print(xtrans)
+                    print(ytrans)
+                    print(rot_angle)
+                    print(mirror)
 
-                img_scaled = minmax_scale(transformed_img.ravel(), feature_range=(0,255)).reshape(transformed_img.shape)
-                img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
-                avg_img_save_path = '%d_t.png' % curr_original_image_num
-                cv2.imwrite(avg_img_save_path, img_scaled)'''
+                    print('rot')
+                    print(rot_angle_matrix_missing[curr_ref_original_image_num,curr_original_image_num])
+                    print(rot_angle_matrix[curr_ref_original_image_num,curr_original_image_num])
+
+                    
+
+                    img_scaled = minmax_scale(curr_original_image.ravel(), feature_range=(0,255)).reshape(curr_original_image.shape)
+                    img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
+                    avg_img_save_path = '%d_o.png' % curr_original_image_num
+                    cv2.imwrite(avg_img_save_path, img_scaled)
+
+                    img_scaled = minmax_scale(transformed_img.ravel(), feature_range=(0,255)).reshape(transformed_img.shape)
+                    img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
+                    avg_img_save_path = '%d_t.png' % curr_original_image_num
+                    cv2.imwrite(avg_img_save_path, img_scaled)'''
 
                 aligned_ref_image_matrix[idx,:,:] = transformed_img
         
@@ -200,11 +203,13 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
             for k in range(0,aligned_ref_image_matrix.shape[0]): #take weighted average 
                 average_image_wrt_ref = average_image_wrt_ref + aligned_ref_image_matrix[k,:,:]*particle_count_list_norm[k]
 
-            #img_scaled = minmax_scale(average_image_wrt_ref.ravel(), feature_range=(0,255)).reshape(average_image_wrt_ref.shape)
-            #img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
-            #avg_img_save_path = '1_4.png'
-            #cv2.imwrite(avg_img_save_path, img_scaled)
-
+            '''if i == 1 and j == 0:
+                img_scaled = minmax_scale(average_image_wrt_ref.ravel(), feature_range=(0,255)).reshape(average_image_wrt_ref.shape)
+                img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
+                avg_img_save_path = '1_0.png'
+                cv2.imwrite(avg_img_save_path, img_scaled)'''
+            
+           
 
         
             average_image_wrt_ref_list[i].append(average_image_wrt_ref)
@@ -460,27 +465,6 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
         mirror_indicator_matrix = alignment_parameters[3] 
 
 
-
-        print(cluster_community_map)
-        print(cluster_ref_img_map)
-
-        print(rot_angle_matrix_missing[41,7])
-        print(xtrans_matrix_missing[41,7])
-        print(ytrans_matrix_missing[41,7])
-        print(mirror_indicator_matrix_missing[41,7])
-
-        print(rot_angle_matrix[41,7])
-        print(xtrans_matrix[41,7])
-        print(ytrans_matrix[41,7])
-        print(mirror_indicator_matrix[41,7])
-
-        print(rot_angle_matrix[7,41])
-        print(xtrans_matrix[7,41])
-        print(ytrans_matrix[7,41])
-        print(mirror_indicator_matrix[7,41])
-
-
-
     return((cluster_community_map, cluster_dist_threshold_map, cluster_dataset_community_dist_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, cluster_img_min_prob_matrix_map, cluster_average_image_wrt_ref_list_map))
 
 
@@ -595,6 +579,8 @@ def save_average_image_wrt_ref(input_dir, cluster_average_image_wrt_ref_list_map
             for community_num in range(0,len(curr_average_image_wrt_ref_list[threshold_idx])):
                 img_name = '%d_%d' % (threshold_idx, community_num)
                 img = curr_average_image_wrt_ref_list[threshold_idx][community_num] 
+                if img_name == '1_0':
+                    print(img)
                 img = crop_image(img)
                 img_scaled = minmax_scale(img.ravel(), feature_range=(0,255)).reshape(img.shape)
                 img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
@@ -633,8 +619,6 @@ def hist_wrapper(input_dir):
     rot_matrix = np.genfromtxt('%s/pairwise_matrix/rot_matrix.csv' % input_dir, delimiter=',')
     mirror_indicator_matrix = np.genfromtxt('%s/pairwise_matrix/mirror_indicator_matrix.csv' % input_dir, delimiter=',')
 
-    alignment_parameters = [xtrans_matrix, ytrans_matrix, rot_matrix, mirror_indicator_matrix]    
-
     particle_count_dict = get_particle_count(input_dir)
 
     hist_data = {}
@@ -643,6 +627,8 @@ def hist_wrapper(input_dir):
     Path(save_path).mkdir(parents=True, exist_ok=True)
 
     for i in range(0,2):
+
+        alignment_parameters = [xtrans_matrix, ytrans_matrix, rot_matrix, mirror_indicator_matrix]    
 
         if i == 0:
             corr_only = False

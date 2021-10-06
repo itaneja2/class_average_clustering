@@ -240,13 +240,7 @@ def parallel_pairwise_dist_matrix(image_2d_matrix, scale_factor, mirror_indicato
         ytrans_list = result[i][2] 
         xtrans_list = result[i][3] 
         mirror_indicator_list = result[i][4] 
-    
-        print(corr_dist_list)
-        print(rot_angle_list)
-        print(ytrans_list)
-        print(xtrans_list)
-        print(mirror_indicator_list)
-        
+     
         for j in range(0,len(corr_dist_list)):
 
             idx1 = corr_dist_list[j][0]
@@ -269,8 +263,6 @@ def rot_trans_invariant_dist_wrapper(unique_relevant_image_pairs, image_2d_matri
     ytrans_list = []
     xtrans_list = []
     mirror_indicator_list = []
-
-    print(unique_relevant_image_pairs)   
  
     for i in range(0,len(unique_relevant_image_pairs)):
 
@@ -313,7 +305,7 @@ def get_missing_alignment_parameters(image_list_cluster_c, alignment_parameters,
     unique_relevant_image_pairs = np.unique(np.array(relevant_image_pairs), axis=0) #list of lists
     unique_relevant_images = np.unique(np.array(relevant_image_pairs))
 
-    print(unique_relevant_images) 
+    print(unique_relevant_images_pairs) 
      
     image_2d_matrix = get_image_2d_matrix(input_dir)
     mrc_height = image_2d_matrix.shape[1]
