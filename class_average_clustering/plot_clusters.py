@@ -20,7 +20,7 @@ from scipy.spatial.distance import squareform
 from sklearn import cluster
 from sklearn import metrics
 from helper_functions import load_obj, get_image_2d_matrix, get_particle_count, get_particle_count_dict_cluster, remove_files_in_folder 
-from gen_hist_v2 import hist_wrapper 
+from gen_hist import hist_wrapper 
 
 def calc_spectral_cluster_labels(input_dir, dist_type, num_clusters):
 
