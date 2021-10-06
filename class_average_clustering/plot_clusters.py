@@ -282,7 +282,7 @@ def gen_png_panel(cluster_num, image_list, image_2d_matrix, save_path):
     tiled_image = np.zeros((num_rows*IMG_HEIGHT,num_cols*IMG_WIDTH))
     max_dim = np.max([num_cols,num_rows])
 
-    for i in range(0,image_2d_matrix.shape[0]):
+    for i in range(0,len(image_list)):
 
         img = image_2d_matrix[image_list[i],:,:]
         img_scaled = minmax_scale(img.ravel(), feature_range=(0,255)).reshape(img.shape)
@@ -327,8 +327,8 @@ if __name__=="__main__":
     print('generating sorted mrc panel per cluster')
     gen_image_panel(input_dir, image_2d_matrix, particle_count_dict)
 
-    print('generating histograms')
-    hist_wrapper(input_dir)
+    #print('generating histograms')
+    #hist_wrapper(input_dir)
     
 
 
