@@ -327,8 +327,8 @@ if __name__=="__main__":
     print('generating sorted mrc panel per cluster')
     gen_image_panel(input_dir, image_2d_matrix, particle_count_dict)
 
-    #print('generating histograms')
-    #hist_wrapper(input_dir)
+    print('generating histograms')
+    hist_wrapper(input_dir)
     
 
 
