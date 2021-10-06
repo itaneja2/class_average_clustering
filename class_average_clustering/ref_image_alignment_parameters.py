@@ -305,7 +305,7 @@ def get_missing_alignment_parameters(image_list_cluster_c, alignment_parameters,
     unique_relevant_image_pairs = np.unique(np.array(relevant_image_pairs), axis=0) #list of lists
     unique_relevant_images = np.unique(np.array(relevant_image_pairs))
 
-    print(unique_relevant_images_pairs) 
+    print(unique_relevant_image_pairs) 
      
     image_2d_matrix = get_image_2d_matrix(input_dir)
     mrc_height = image_2d_matrix.shape[1]
