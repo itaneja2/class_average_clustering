@@ -46,6 +46,9 @@ def get_ref_image(dist_matrix_cluster_c, community_image_list, particle_count_di
 
 def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, particle_count_dict_cluster_c, image_list_cluster_c, alignment_parameters, input_dir):
 
+    if len(alignment_parameters) != 8:
+        sys.exit('length of alignment_parameters should be 8')
+
 
     def apply_transformations(img, x, y, angle, mirror, max_height, max_width):
 
@@ -172,7 +175,7 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
 
                 transformed_img = apply_transformations(curr_original_image, xtrans, ytrans, rot_angle, mirror, max_height, max_width)
                 
-                '''if i == 1 and j == 0:
+                if i == 0 and j == 7:
 
                     print('here')
                     print(curr_original_image_num)
@@ -195,7 +198,7 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
                     img_scaled = minmax_scale(transformed_img.ravel(), feature_range=(0,255)).reshape(transformed_img.shape)
                     img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
                     avg_img_save_path = '%d_t.png' % curr_original_image_num
-                    cv2.imwrite(avg_img_save_path, img_scaled)'''
+                    cv2.imwrite(avg_img_save_path, img_scaled)
 
                 aligned_ref_image_matrix[idx,:,:] = transformed_img
         
@@ -203,11 +206,11 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
             for k in range(0,aligned_ref_image_matrix.shape[0]): #take weighted average 
                 average_image_wrt_ref = average_image_wrt_ref + aligned_ref_image_matrix[k,:,:]*particle_count_list_norm[k]
 
-            '''if i == 1 and j == 0:
+            if i == 0 and j == 7:
                 img_scaled = minmax_scale(average_image_wrt_ref.ravel(), feature_range=(0,255)).reshape(average_image_wrt_ref.shape)
                 img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
-                avg_img_save_path = '1_0.png'
-                cv2.imwrite(avg_img_save_path, img_scaled)'''
+                avg_img_save_path = '0_7.png'
+                cv2.imwrite(avg_img_save_path, img_scaled)
             
            
 
@@ -399,8 +402,10 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
     cluster_img_min_prob_matrix_map = {}
     cluster_dataset_community_dist_map = {}
     cluster_average_image_wrt_ref_list_map = {}
-    
+ 
     for c in unique_clusters:
+
+        alignment_parameters_complete = alignment_parameters.copy()
         
         image_list_cluster_c = np.genfromtxt('%s/class_average_panel_plots/image_list_cluster_%d.csv' % (input_dir, int(c)), delimiter=',')
         image_list_cluster_c = image_list_cluster_c.astype(int)
@@ -451,19 +456,13 @@ def get_cluster_info_parallel(input_dir, corr_cluster_labels, corr_dist_matrix, 
         print("BEGINNING ref_image_alignment_parameters.get_missing_alignment_parameter")
         rot_angle_matrix_missing, xtrans_matrix_missing, ytrans_matrix_missing, mirror_indicator_matrix_missing = ref_image_alignment_parameters.get_missing_alignment_parameters(image_list_cluster_c, alignment_parameters, community_image_list, ref_image_list, input_dir)
         
-        alignment_parameters.append(xtrans_matrix_missing)
-        alignment_parameters.append(ytrans_matrix_missing)
-        alignment_parameters.append(rot_angle_matrix_missing)
-        alignment_parameters.append(mirror_indicator_matrix_missing)
+        alignment_parameters_complete.append(xtrans_matrix_missing)
+        alignment_parameters_complete.append(ytrans_matrix_missing)
+        alignment_parameters_complete.append(rot_angle_matrix_missing)
+        alignment_parameters_complete.append(mirror_indicator_matrix_missing)
 
-        average_image_wrt_ref_list = get_average_image_wrt_ref(ref_image_list, community_image_list, particle_count_dict_cluster_c, image_list_cluster_c, alignment_parameters, input_dir)
+        average_image_wrt_ref_list = get_average_image_wrt_ref(ref_image_list, community_image_list, particle_count_dict_cluster_c, image_list_cluster_c, alignment_parameters_complete, input_dir)
         cluster_average_image_wrt_ref_list_map[c] = average_image_wrt_ref_list
-
-        xtrans_matrix = alignment_parameters[0] 
-        ytrans_matrix = alignment_parameters[1]
-        rot_angle_matrix = alignment_parameters[2]
-        mirror_indicator_matrix = alignment_parameters[3] 
-
 
     return((cluster_community_map, cluster_dist_threshold_map, cluster_dataset_community_dist_map, cluster_community_count_map, cluster_ref_img_map, cluster_max_community_weight_map, cluster_img_min_prob_matrix_map, cluster_average_image_wrt_ref_list_map))
 
