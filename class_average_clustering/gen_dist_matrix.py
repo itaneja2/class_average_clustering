@@ -24,6 +24,8 @@ from shutil import copyfile
 from helper_functions import load_obj, save_obj, sort_dict 
 from extract_relion_particle_counts import get_particle_counts
 
+cs2star_path = '/home_local/landeradmin/pyem' #UPDATE THIS depending on where pyem is located in your machine 
+
 
 def crop_image(img):    
     row_idx, col_idx = np.nonzero(img)
@@ -457,14 +459,12 @@ if __name__=="__main__":
 
     if '.cs' in args.metadata_file:
         print('converting cs to star file')
-        cs2star_path = '/home_local/landeradmin/pyem' #UPDATE THIS depending on where pyem is located in your machine 
         print('assuming csparc2star.py is located in %s' % cs2star_path)
         output_metadata_file = args.metadata_file.replace('.cs','.star')
         command = "python3 %s/csparc2star.py %s %s" % (cs2star_path, args.metadata_file, output_metadata_file)
         subprocess.call(command, shell=True)
         args.metadata_file = output_metadata_file
         print('converted cs to star file')
-        
 
     if '.mrc' not in args.mrc_file:
         sys.exit('mrc_file must have extension .mrc')
