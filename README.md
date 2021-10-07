@@ -22,6 +22,10 @@ Generates clusters, sorts class averages, and generates relevant input for histo
 		pip install .
 		
 	The first command (`git pull`) checks the [git repo](https://github.com/itaneja2/class_average_clustering) for updates and then the second command installs the updated version.
+	
+5. Install [pyem](https://github.com/asarnow/pyem) if it's not already installed on your machine. This is needed to convert .cs into .star files. 
+	
+5.  Update the file `gen_dist_matrix.py ` to reflect where the programs from the package [pyem](https://github.com/asarnow/pyem) are located. This is demarcated in the beginning of the file. 
 
 ### Usage
 
@@ -45,7 +49,7 @@ Generates clusters, sorts class averages, and generates relevant input for histo
 
 		python plot_clusters.py --input_dir /path/to/folder/generated/by/gen_dist_matrix --num_clusters 1
 		
-	* You have the option to specify the number of clusters generated. By default, the program separates the class averages out into the 'optimal' number of clusters based on similarities of their normalized cross-correlation. This appears to be useful step to separate junk from non-junk. However, this step may generate clusters with class averages from different views that visually appear very distinct. If you don't want to separate your class averages out into different clusters, you can specify this with the `--num_clusters 1` option. More generally, if you want to separate your class averages out into N clusters, you can specify this with the `--num_clusters N` option.
+	* You have the option to specify the number of clusters generated. By default, the program separates the class averages out into the 'optimal' number of clusters based on similarities of their normalized cross-correlation. This appears to be useful step to separate junk from non-junk. If there is a minor amount of junk in your class averages, I wouldn't recommend separating your class averages out into different clusters. This can be specified with the `--num_clusters 1` option. More generally, if you want to separate your class averages out into N clusters, you can specify this with the `--num_clusters N` option.
 		
 Once this is done running, you should see a file structure looking as follows:
 
@@ -55,7 +59,9 @@ Once this is done running, you should see a file structure looking as follows:
     +----> class_average_panel_plots
            |
            +----> cluster_0.mrc
+           +----> cluster_0.png
            +----> cluster_1.mrc
+           +----> cluster_1.png
     |
     +----> filepath.txt
     |
@@ -75,7 +81,7 @@ Once this is done running, you should see a file structure looking as follows:
            |
            +---->  
 
-`cluster_0.mrc` and `cluster_1.mrc` refer to the original class average file split into two subsets. Each cluster is also sorted, so similar images appear near each other in the output. 
+`cluster_0.mrc/png` and `cluster_1.mrc/png` refer to the original class average file split into two subsets. Each cluster is also sorted, so similar images appear near each other in the output. 
 
 
 ### Methods/Results
