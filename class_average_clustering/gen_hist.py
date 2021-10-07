@@ -175,7 +175,7 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
 
                 transformed_img = apply_transformations(curr_original_image, xtrans, ytrans, rot_angle, mirror, max_height, max_width)
                 
-                if i == 0 and j == 7:
+                '''if i == 0 and j == 7:
 
                     print('here')
                     print(curr_original_image_num)
@@ -198,7 +198,7 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
                     img_scaled = minmax_scale(transformed_img.ravel(), feature_range=(0,255)).reshape(transformed_img.shape)
                     img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
                     avg_img_save_path = '%d_t.png' % curr_original_image_num
-                    cv2.imwrite(avg_img_save_path, img_scaled)
+                    cv2.imwrite(avg_img_save_path, img_scaled)'''
 
                 aligned_ref_image_matrix[idx,:,:] = transformed_img
         
@@ -206,11 +206,11 @@ def get_average_image_wrt_ref(all_ref_image_list, all_community_image_list, part
             for k in range(0,aligned_ref_image_matrix.shape[0]): #take weighted average 
                 average_image_wrt_ref = average_image_wrt_ref + aligned_ref_image_matrix[k,:,:]*particle_count_list_norm[k]
 
-            if i == 0 and j == 7:
+            '''if i == 0 and j == 7:
                 img_scaled = minmax_scale(average_image_wrt_ref.ravel(), feature_range=(0,255)).reshape(average_image_wrt_ref.shape)
                 img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
                 avg_img_save_path = '0_7.png'
-                cv2.imwrite(avg_img_save_path, img_scaled)
+                cv2.imwrite(avg_img_save_path, img_scaled)'''
             
            
 
@@ -578,8 +578,6 @@ def save_average_image_wrt_ref(input_dir, cluster_average_image_wrt_ref_list_map
             for community_num in range(0,len(curr_average_image_wrt_ref_list[threshold_idx])):
                 img_name = '%d_%d' % (threshold_idx, community_num)
                 img = curr_average_image_wrt_ref_list[threshold_idx][community_num] 
-                if img_name == '1_0':
-                    print(img)
                 img = crop_image(img)
                 img_scaled = minmax_scale(img.ravel(), feature_range=(0,255)).reshape(img.shape)
                 img_scaled = maintain_aspect_ratio_resize(img_scaled, width=100, height=100)
