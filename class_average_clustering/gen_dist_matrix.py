@@ -27,12 +27,49 @@ from extract_relion_particle_counts import get_particle_counts
 cs2star_path = '/home_local/landeradmin/pyem' #UPDATE THIS depending on where pyem is located in your machine 
 
 
-def crop_image(img):    
+def crop_image(img):   
+
+    """
+    Crop image based on first nonzero elements
+
+    Parameters
+    ------------
+    img: 2d np.ndarray 
+        A single class average 
+    Returns
+    -----------
+    2d np.ndarray 
+        Cropped image 
+    """
+
+ 
     row_idx, col_idx = np.nonzero(img)
     return(img[np.min(row_idx):np.max(row_idx)+1,np.min(col_idx):np.max(col_idx)+1])
 
 
 def norm_cross_correlation_cv(img1, img2):
+
+    """
+    Calculate the normalized cross-correlation between two images  
+
+    Parameters
+    ------------
+    img1: 2d np.ndarray
+        A single class average
+    img2: 2d np.ndarray
+        A single class average  
+    Returns
+    -----------
+    2d np.ndarray
+        Cross-correlation matrix
+    tuple
+        2D Index corresponding to maximum cross-correlation
+    int
+        Relative delta x to shift img2 to maximize cross-correlation with img1
+    int
+        Relative delta y to shift img2 to maximize cross-correlation with img1 
+    """
+
       
     cross_image = cv2.filter2D(img1, -1, img2, borderType=cv2.BORDER_CONSTANT)
      
@@ -44,7 +81,28 @@ def norm_cross_correlation_cv(img1, img2):
     return(cross_image, max_idx, relative_diff_x, relative_diff_y)
 
 
-def get_image_rotation_matrix(image_2d_matrix, scale_factor, mirror):
+def get_image_rotation_matrix_map(image_2d_matrix, scale_factor, mirror):
+
+    """
+    Wrapper to calclate and store rotated images for each of the class averages   
+
+    Parameters
+    ------------
+    image_2d_matrix: 3d np.ndarray
+        Axis 0 corresponds to class average number, axis 1 corresponds to class average width, and axis 2 corresponds to class average height  
+    scale_factor: float
+        Factor by which to downsample image 
+    mirror: int
+        Whether or not to calculate rotations for mirror image  
+    Returns
+    -----------
+    dict
+        Dictionary of dictionaries storing each rotation for each image in image_2d_matrix 
+    dict
+        Dictionary of dictionaries storing the maximum shape among all rotations for each image in image_2d_matrix 
+    """
+
+
 
     #each image has a unique maximum shape  
     image_2d_rotation_matrix_map = {}
@@ -86,6 +144,24 @@ def get_image_rotation_matrix(image_2d_matrix, scale_factor, mirror):
  
 def get_rotated_image_max_shape(img):
 
+    """
+    Calculates and stores rotated images for a class average  
+
+    Parameters
+    ------------
+    img: 2d np.ndarray
+        A single class average
+    Returns
+    -----------
+    int
+        Maximium height among all rotated images
+    int 
+        Maximum width among all rotated images 
+    dict
+        Dictionary storing each rotation for an image 
+    """
+
+
     rotation_angles = range(0,360,6)
 
     max_shape = np.array([0,0])
@@ -117,7 +193,44 @@ def get_rotated_image_max_shape(img):
 
 
 def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_rotation_matrix_max_shape_map, img1_idx, img2_idx, mirror_bool, mrc_height, mrc_width, corr_only=False):
-    
+   
+
+    """
+    Calculates rotational and reflectional invariant normalized cross-correlation and shape based distance using the 95th-percentile hausdorff distance between edges. 
+    Note that rotation and reflection operations are applied to img2.  
+
+    Parameters
+    ------------
+    image_2d_rotation_matrix_map: dict
+        Dictionary of dictionaries storing each rotation for each image in image_2d_matrix 
+    image_2d_rotation_matrix_max_shape_map: dict
+        Dictionary of dictionaries storing the maximum shape among all rotations for each image in image_2d_matrix 
+    img1_idx: int
+        Index of first class average 
+    img2_idx: int
+        Index of second class average 
+    mirror_bool:
+        Whether or not to calculate distance between mirror image of img2_idx class average  
+    mrc_height:
+        Height of input class average
+    mrc_width:
+        Width of input class average 
+    Returns
+    -----------
+    float:
+        Maximum normalized-cross correlation between img2 and img1
+    float: 
+        Minimum  95th percentile hausdorff distance between img2 and img1
+    int 
+        Angle to rotate img2 to maximize cross-correlation with img1
+    int
+        Relative delta y to shift img2 to maximize cross-correlation with img1
+    int
+        Relative delta x to shift img2 to maximize cross-correlation with img1 
+    """
+
+
+ 
     rotation_angles = range(0,360,6)
     
     img1_cropped = image_2d_rotation_matrix_map['original'][img1_idx][0]
@@ -175,7 +288,7 @@ def rot_trans_invariant_dist_optimized(image_2d_rotation_matrix_map, image_2d_ro
     correlation_dist_matrix = np.zeros(len(rotation_angles))
     correlation_params = np.zeros((len(rotation_angles), 3)) #rotation angle, relative_diff_y, relative_diff_x
 
-
+    #normalize each image 
     img1_cropped_padded -= np.mean(img1_cropped_padded)
     img2_rotation_2d_matrix_mean = np.mean(img2_rotation_2d_matrix, axis=(1,2))
     img2_rotation_2d_matrix = img2_rotation_2d_matrix - img2_rotation_2d_matrix_mean.reshape(img2_rotation_2d_matrix_mean.shape[0],1,1)
@@ -335,6 +448,8 @@ def rot_trans_invariant_dist_wrapper(slice_, mirror, mrc_height, mrc_width, dist
         for idx_j,j in enumerate(range(i+1,num_images_all)):
 
             correlation_dist_orig, hausdroff_dist_orig, angle_optimal_orig, relative_diff_y_optimal_orig, relative_diff_x_optimal_orig = dist_func(rotation_matrix_map, max_shape_map, i, j, False, mrc_height, mrc_width)
+
+            #if mirror is 1, we calculate correlation and edge based distance for mirror image. Final distances used are the ones corresponding to the greater cross correlation 
  
             if mirror:
                 correlation_dist_mirror, hausdroff_dist_mirror, angle_optimal_mirror, relative_diff_y_optimal_mirror, relative_diff_x_optimal_mirror = dist_func(rotation_matrix_map, max_shape_map, i, j, True, mrc_height, mrc_width)
@@ -361,6 +476,7 @@ def rot_trans_invariant_dist_wrapper(slice_, mirror, mrc_height, mrc_width, dist
 
 def convert_upper_triang_mat_to_symmetric(mat, matrix_type):
     
+    #to convert cross-correlation to a 'distance' 
     if matrix_type == 'corr':
         diag_val = 1
     else:
@@ -383,7 +499,8 @@ def save_matrix(dist_matrix, matrix_type, output_dir, start_time):
 
     if matrix_type in ['corr', 'edge']: 
         dist_matrix = convert_upper_triang_mat_to_symmetric(dist_matrix, matrix_type)
-    
+
+    #to convert cross-correlation to a 'distance' 
     if matrix_type == 'corr':
         dist_matrix = 1-dist_matrix
 
@@ -502,7 +619,7 @@ if __name__=="__main__":
  
     start_time = time.monotonic()
     print('calculating rotated versions of images')
-    rotation_matrix_map, max_shape_map = get_image_rotation_matrix(image_2d_matrix, args.scale_factor, args.mirror)
+    rotation_matrix_map, max_shape_map = get_image_rotation_matrix_map(image_2d_matrix, args.scale_factor, args.mirror)
     print('calculating pairwise dist matrix')
     corr_dist_matrix, edge_dist_matrix, rot_angle_matrix, ytrans_matrix, xtrans_matrix, mirror_indicator_matrix = parallel_pairwise_dist_matrix(args.mirror, mrc_height, mrc_width, rot_trans_invariant_dist_wrapper, rot_trans_invariant_dist_optimized, -1)
     print('saving dist matrix - clean')

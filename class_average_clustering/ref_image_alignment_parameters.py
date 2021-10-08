@@ -23,23 +23,8 @@ from pathlib import Path
 from shutil import copyfile
 from helper_functions import save_obj, get_image_2d_matrix, get_particle_count, get_particle_count_dict_cluster, remove_files_in_folder 
 from extract_relion_particle_counts import get_particle_counts
+from gen_dist_matrix import crop_image, norm_cross_correlation_cv, get_rotated_image_max_shape 
 
-
-def crop_image(img):    
-    row_idx, col_idx = np.nonzero(img)
-    return(img[np.min(row_idx):np.max(row_idx)+1,np.min(col_idx):np.max(col_idx)+1])
-
-
-def norm_cross_correlation_cv(img1, img2):
-      
-    cross_image = cv2.filter2D(img1, -1, img2, borderType=cv2.BORDER_CONSTANT)
-     
-    max_idx = np.unravel_index(np.argmax(cross_image), cross_image.shape)
-     
-    relative_diff_y = max_idx[0] - img1.shape[0]//2
-    relative_diff_x = max_idx[1] - img1.shape[1]//2
-     
-    return(cross_image, max_idx, relative_diff_x, relative_diff_y)
 
 
 def get_image_rotation_matrix(image_2d_matrix, relevant_image_list, scale_factor, mirror):
@@ -82,37 +67,6 @@ def get_image_rotation_matrix(image_2d_matrix, relevant_image_list, scale_factor
     return(rotation_matrix_map, max_shape_map)           
        
  
-def get_rotated_image_max_shape(img):
-
-    rotation_angles = range(0,360,6)
-
-    max_shape = np.array([0,0])
-
-    max_idx_row = -1
-    max_idx_col = -1
-
-    curr_img = np.copy(img)
-
-    rotation_matrix_map = {}
-    
-    for j in rotation_angles:
-
-        rotated_img = imutils.rotate_bound(curr_img, j)
-        rotated_img_cropped = crop_image(rotated_img)
-        rotated_img_cropped_shape = rotated_img_cropped.shape
-
-        if rotated_img_cropped_shape[0] > max_shape[0]:
-            max_shape[0] = rotated_img_cropped_shape[0]
-            max_idx_row = j
-
-        if rotated_img_cropped_shape[1] > max_shape[1]:
-            max_shape[1] = rotated_img_cropped_shape[1]
-            max_idx_col = j 
-        
-        rotation_matrix_map[j] = rotated_img_cropped
-
-    return((max_shape[0], max_shape[1], rotation_matrix_map))
-
 
 def rot_trans_invariant_dist_optimized(image_2d_matrix, img1_idx, img2_idx, scale_factor, mirror_bool, mrc_height, mrc_width):
     
@@ -268,7 +222,7 @@ def rot_trans_invariant_dist_wrapper(unique_relevant_image_pairs, image_2d_matri
 
         img1_idx = unique_relevant_image_pairs[i][0]
         img2_idx = unique_relevant_image_pairs[i][1]
-        mirror = mirror_indicator_matrix[np.min([img1_idx, img2_idx]), np.max([img1_idx, img2_idx])] #upper triangular only
+        mirror = mirror_indicator_matrix[np.min([img1_idx, img2_idx]), np.max([img1_idx, img2_idx])] 
         correlation_dist, angle_optimal, relative_diff_y_optimal, relative_diff_x_optimal = dist_func(image_2d_matrix, img1_idx, img2_idx, scale_factor, mirror, mrc_height, mrc_width)
 
         corr_dist_list.append([img1_idx, img2_idx, correlation_dist])
@@ -284,6 +238,37 @@ def rot_trans_invariant_dist_wrapper(unique_relevant_image_pairs, image_2d_matri
 
 def get_missing_alignment_parameters(image_list_cluster_c, alignment_parameters, community_image_list, ref_image_list, input_dir):
 
+    """
+    Because we only applied transformations to img2 and then calculated distances wrt img1, to calculate the most accurate alignment possible between image x and y
+    we should calculate this in the other direction as well if needed. Note that the output of this function is only a lower triangular matrix. 
+    This is because we only calculated the upper triangular matrix in the original distance calculations. For reference, each entry (i,j) in the matrix corresponds    
+    how to align image j to image i. 
+
+    Parameters
+    ------------
+    image_list_cluster_c: list
+        List of class average numbers in a given cluster. Note this corresponds to their original index.  
+    alignment_parameters: list of np.ndarray
+        List where first element corresponds to xtrans_matrix, second element corresonds to ytrans_matrix, third element corresponds to rot_angle_matrix, fourth element corresponds to mirror_matrix  
+    community_image_list: list 
+        List of lists of lists. First list corresponds to a given distance threshold, second corresponds to list of images in each community 
+    ref_image_list: list
+        List of lists: First list corresponds to a given distance threshold, second corresponds to reference image for each community
+    input_dir: str
+        Directory where data is saved for class averages  
+    Returns
+    -----------
+    2d np.ndarray
+        Rotation angle alignment matrix 
+    2d np.ndarray
+        Xtrans alignment matrix
+    2d np.ndarray
+        Ytrans alignment matrix
+    2d np.ndarray
+        Mirror indicator matrix  
+    """
+
+    
     relevant_image_pairs = [] 
 
     for i in range(0,len(community_image_list)):

@@ -162,28 +162,12 @@ def gen_image_panel(input_dir, image_2d_matrix, particle_count_dict):
         edge_dist_matrix_subset = edge_dist_matrix[np.ix_(image_list, image_list)]
         corr_dist_matrix_subset = 1-corr_dist_matrix[np.ix_(image_list, image_list)]
         edge_corr_ratio_dist_matrix_subset = edge_dist_matrix_subset/corr_dist_matrix_subset
-        #edge_corr_ratio_dist_matrix_subset = edge_dist_matrix_subset/np.square(corr_dist_matrix_subset)
-
-
              
         corresponding_images, cluster_sub_labels = calc_hierarchical_cluster(edge_corr_ratio_dist_matrix_subset)
         image_list_hclust_ordered = image_list[corresponding_images]
 
         particle_count_dict_cluster_c = get_particle_count_dict_cluster(particle_count_dict, image_list_hclust_ordered)
-
-        '''counts = collections.Counter(cluster_sub_labels)
-        cluster_sub_labels_sorted_by_freq = sorted(cluster_sub_labels, key=lambda x: -counts[x])
-
-        cluster_sub_labels_sorted_by_freq_unique = []
-        for val in cluster_sub_labels_sorted_by_freq:
-            if val != -1 and val not in cluster_sub_labels_sorted_by_freq_unique:
-                cluster_sub_labels_sorted_by_freq_unique.append(val)
-
-        image_list_sorted = []
-        for s in cluster_sub_labels_sorted_by_freq_unique:
-            image_list_sorted.append(image_list_hclust_ordered[np.where(cluster_sub_labels==s)[0]])
-        image_list_sorted = [item for sublist in image_list_sorted for item in sublist]'''
-        
+ 
         gen_mrc_file(int(c), image_list_hclust_ordered, image_2d_matrix, output_dir)
         gen_png_panel(int(c), image_list_hclust_ordered, image_2d_matrix, output_dir)
             
