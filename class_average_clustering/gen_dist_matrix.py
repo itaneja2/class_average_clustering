@@ -22,7 +22,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from pathlib import Path
 from shutil import copyfile
 from helper_functions import load_obj, save_obj, sort_dict 
-from extract_relion_particle_counts import get_particle_counts
+from extract_relion_particle_counts import gen_particle_counts
 
 cs2star_path = '/home_local/landeradmin/pyem' #UPDATE THIS depending on where pyem is located in your machine 
 
@@ -610,9 +610,10 @@ if __name__=="__main__":
     with open(filepath_txt_file, "w") as text_file:
         text_file.write(output_dir_abs_path_norm)
 
+    print(args.metadata_file)
+    particle_count_file = gen_particle_counts(args.metadata_file) 
+    print(particle_count_file)    
 
-    particle_count_file = get_particle_counts(args.metadata_file) 
-    
     image_2d_matrix = gen_clean_input(args.mrc_file, particle_count_file, output_dir)
     mrc_height = image_2d_matrix.shape[1]
     mrc_width = image_2d_matrix.shape[2]
