@@ -22,7 +22,6 @@ from sklearn.metrics.pairwise import euclidean_distances
 from pathlib import Path
 from shutil import copyfile
 from helper_functions import save_obj, get_image_2d_matrix, get_particle_count, get_particle_count_dict_cluster, remove_files_in_folder 
-from extract_relion_particle_counts import get_particle_counts
 from gen_dist_matrix import crop_image, norm_cross_correlation_cv, get_rotated_image_max_shape 
 
 
